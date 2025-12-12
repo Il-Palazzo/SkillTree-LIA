@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIA Skill Tree v13</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #050505;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        .font-display { font-family: 'Orbitron', sans-serif; }
+        .clip-path-slant { clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Saving Indicator Animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Neon Breathing Animations - Performance Optimized */
+        @keyframes breathe-green {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(0, 255, 136, 0.5),
+                           0 0 20px rgba(0, 255, 136, 0.3),
+                           0 0 30px rgba(0, 255, 136, 0.2),
+                           inset 0 0 10px rgba(0, 255, 136, 0.1);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(0, 255, 136, 0.8),
+                           0 0 40px rgba(0, 255, 136, 0.5),
+                           0 0 60px rgba(0, 255, 136, 0.3),
+                           0 0 80px rgba(0, 255, 136, 0.2),
+                           inset 0 0 20px rgba(0, 255, 136, 0.2);
+            }
+        }
+
+        @keyframes breathe-yellow {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(255, 204, 0, 0.5),
+                           0 0 20px rgba(255, 204, 0, 0.3),
+                           0 0 30px rgba(255, 204, 0, 0.2),
+                           inset 0 0 10px rgba(255, 204, 0, 0.1);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 204, 0, 0.8),
+                           0 0 40px rgba(255, 204, 0, 0.5),
+                           0 0 60px rgba(255, 204, 0, 0.3),
+                           0 0 80px rgba(255, 204, 0, 0.2),
+                           inset 0 0 20px rgba(255, 204, 0, 0.2);
+            }
+        }
+
+        @keyframes breathe-pink {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(255, 0, 255, 0.5),
+                           0 0 20px rgba(255, 0, 255, 0.3),
+                           0 0 30px rgba(255, 0, 255, 0.2),
+                           inset 0 0 10px rgba(255, 0, 255, 0.1);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 0, 255, 0.8),
+                           0 0 40px rgba(255, 0, 255, 0.5),
+                           0 0 60px rgba(255, 0, 255, 0.3),
+                           0 0 80px rgba(255, 0, 255, 0.2),
+                           inset 0 0 20px rgba(255, 0, 255, 0.2);
+            }
+        }
+
+        .breathe-green {
+            animation: breathe-green 2s ease-in-out infinite !important;
+        }
+        .breathe-yellow {
+            animation: breathe-yellow 2s ease-in-out infinite !important;
+        }
+        .breathe-pink {
+            animation: breathe-pink 2s ease-in-out infinite !important;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body>
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="relative w-full h-screen overflow-hidden bg-[#050505]">
+        
+        <!-- MAIN CANVAS LAYER (Map) -->
+        <canvas id="skill-canvas" class="block w-full h-full cursor-crosshair touch-none z-0"></canvas>
+
+        <!-- FX CANVAS LAYER (Particles - On Top) -->
+        <canvas id="fx-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-[100]"></canvas>
+
+        <!-- START SCREEN -->
+        <div id="start-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050505] transition-opacity duration-500">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] z-0 pointer-events-none"></div>
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
+            
+            <div class="z-10 text-center p-8 border border-neutral-800 bg-neutral-900/80 backdrop-blur-md max-w-lg w-full shadow-[0_0_50px_rgba(0,0,0,0.8)] clip-path-slant">
+                <div class="mb-6 flex justify-center">
+                    <div class="breathe-yellow p-4 rounded-full bg-neutral-950 border border-yellow-500/30">
+                        <i data-lucide="cpu" class="w-12 h-12 text-yellow-500"></i>
+                    </div>
+                </div>
+                
+                <h1 class="text-5xl font-display font-bold text-white mb-2 tracking-tighter">LIA SKILL TREE <span class="text-yellow-500 text-lg align-top">v13</span></h1>
+                <p class="text-neutral-400 font-light mb-8 font-mono text-sm tracking-widest">SYSTEM READY. INITIALIZE PROTOCOL.</p>
+
+                <div class="space-y-4">
+                    <button id="btn-load-default" class="breathe-yellow w-full font-display font-bold uppercase tracking-wider py-3 px-4 border border-yellow-500 bg-yellow-500 text-black hover:bg-yellow-400 transition-all clip-path-slant flex justify-center items-center gap-2">
+                        <i data-lucide="play"></i> Initialize Simulation
+                    </button>
+                    <button id="btn-load-file" class="w-full font-display font-bold uppercase tracking-wider py-3 px-4 border border-cyan-400 text-cyan-400 hover:bg-cyan-950 transition-all clip-path-slant flex justify-center items-center gap-2">
+                         <i data-lucide="upload"></i> Load JSON
+                    </button>
+                    <input type="file" id="file-input" class="hidden" accept=".json">
+                </div>
+            </div>
+        </div>
+
+        <!-- HUD LAYER -->
+        <div id="hud-layer" class="hidden">
+            <!-- Top Left -->
+            <div class="fixed top-6 left-6 z-40 pointer-events-none">
+                <h1 class="text-2xl font-display font-bold text-white tracking-widest opacity-80">
+                    Lic.IA <span class="text-yellow-500">SKILL TREE</span>
+                </h1>
+                <div class="h-1 w-32 bg-yellow-500 mt-1"></div>
+            </div>
+
+            <!-- Top Right -->
+            <div class="fixed top-6 right-6 z-40 flex flex-col items-end pointer-events-none">
+                <div class="text-sm font-mono text-neutral-400">CREDITS ACQUIRED</div>
+                <div class="text-4xl font-display font-bold text-white">
+                    <span id="credits-current" class="text-green-400">0</span> / <span id="credits-total">0</span>
+                </div>
+                <div id="credits-percent" class="text-lg text-yellow-500 font-mono mt-1 font-bold">0% COMPLETE</div>
+            </div>
+
+            <!-- Auto Save Indicator -->
+            <div id="save-indicator" class="fixed bottom-20 right-6 z-50 flex items-center gap-3 opacity-0 transition-opacity duration-300 pointer-events-none">
+                <div class="w-4 h-4 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin-slow"></div>
+                <span class="text-green-500 font-display font-bold text-xs tracking-widest">SAVING DATA...</span>
+            </div>
+
+            <!-- Bottom Right -->
+            <div class="fixed bottom-6 right-6 z-40 flex gap-2 pointer-events-auto">
+                <button onclick="app.downloadSave()" class="bg-neutral-900 border border-neutral-600 text-neutral-400 hover:text-white hover:border-white px-4 py-2 font-display font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="save" class="w-3 h-3"></i> Save State
+                </button>
+            </div>
+
+            <!-- Tooltip -->
+            <div id="tooltip" class="fixed z-50 pointer-events-none hidden bg-black/90 border border-yellow-500/40 p-3 max-w-xs backdrop-blur-sm">
+                <div id="tooltip-name" class="text-white font-bold font-display text-sm mb-1"></div>
+                <div id="tooltip-desc" class="text-neutral-400 text-xs leading-tight"></div>
+            </div>
+        </div>
+
+        <!-- FOCUS MODAL -->
+        <div id="focus-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity">
+            <!-- Left Panel -->
+            <div class="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 w-80 bg-neutral-900/95 border-r-4 border-l border-y border-neutral-800 p-6 shadow-2xl skew-x-[-2deg] border-r-yellow-500/50 text-white">
+                <h2 id="modal-title" class="text-3xl font-display font-bold mb-1">Title</h2>
+                <div class="text-xs font-mono text-neutral-500 mb-4 uppercase tracking-widest">
+                    SEM <span id="modal-sem"></span> • <span id="modal-credits"></span> CREDITS
+                </div>
+                <p id="modal-desc" class="text-sm text-neutral-300 mb-6 leading-relaxed font-light min-h-[60px]">
+                    Description
+                </p>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-xs uppercase font-bold text-neutral-500">
+                        <span>Progress</span>
+                        <span id="modal-progress-text">0%</span>
+                    </div>
+                    <div class="h-2 w-full bg-neutral-800 rounded overflow-hidden">
+                        <div id="modal-progress-bar" class="h-full bg-yellow-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-neutral-800 space-y-3">
+                    <button id="btn-override" class="w-full py-2 border border-red-500/50 text-red-500 hover:bg-red-950 font-display font-bold text-xs uppercase">
+                        Admin Override
+                    </button>
+                    <button id="btn-close-modal" class="w-full py-2 border border-neutral-600 text-neutral-400 hover:bg-neutral-800 font-display font-bold text-xs uppercase">
+                        Close
+                    </button>
+                </div>
+            </div>
+
+            <!-- Center Radial (Dynamically Rendered) -->
+            <div id="radial-container" class="relative w-[600px] h-[600px] flex items-center justify-center pointer-events-none">
+                <!-- Center Node -->
+                <div id="radial-center" class="pointer-events-auto relative z-20 w-40 h-40 rounded-full border-4 bg-neutral-900 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.5)] transition-all duration-300">
+                     <div id="radial-center-content" class="text-center"></div>
+                </div>
+                <!-- Satellites will be injected here -->
+            </div>
+        </div>
+
+        <!-- ELECTIVE MODAL -->
+        <div id="elective-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md">
+            <div class="w-[800px] max-h-[90vh] flex flex-col bg-neutral-900 border border-yellow-500/30 p-8 shadow-[0_0_50px_rgba(234,179,8,0.1)] relative">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-display font-bold text-white">AVAILABLE ELECTIVES</h2>
+                    <button onclick="app.closeElectiveModal()" class="text-neutral-500 hover:text-white"><i data-lucide="x"></i></button>
+                </div>
+                
+                <div id="elective-list" class="grid grid-cols-1 gap-3 overflow-y-auto pr-2 flex-1">
+                    <!-- Items injected via JS -->
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-neutral-800 flex justify-end">
+                     <button onclick="app.closeElectiveModal()" class="py-2 px-6 border border-neutral-600 text-neutral-400 hover:text-white hover:border-white font-display font-bold uppercase text-sm">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        // --- DATA ---
+        const OPTATIVES_POOL = [
+            { id: "og1", name: 'Desarrollo de Videojuegos en 2D', credits: 8, desc: 'Aplicaciones interactivas de entretenimiento.', subs: ['Arquitectura de motor', 'Allegro 5', 'Pygame', 'Animación', 'Colisiones'] },
+            { id: "og2", name: 'Prog. Ambientes Gráficos C#', credits: 8, desc: 'Desarrollo de interfaces visuales.', subs: ['Sintaxis C#', 'Visual Studio', 'GUI', 'Eventos', 'Excepciones'] },
+            { id: "og3", name: 'Análisis Estadístico', credits: 8, desc: 'Estadística aplicada a datos.', subs: ['Descriptiva', 'Limpieza', 'Inferencia', 'Monte Carlo', 'Metodología'] },
+            { id: "og4", name: 'Optimización Discreta', credits: 8, desc: 'Solución de problemas combinatorios.', subs: ['Prog. Lineal', 'Simplex', 'Grafos', 'Algoritmos Aprox', 'NP-duros'] },
+            { id: "og5", name: 'Robots Autónomos', credits: 8, desc: 'Navegación y autonomía.', subs: ['Cinemática', 'PID', 'Sensores', 'SLAM', 'Trayectorias'] },
+            { id: "og6", name: 'Visión por Computadora', credits: 8, desc: 'Problemas actuales de visión.', subs: ['Estado del arte', 'Casos', 'Proyecto', 'Algoritmos'] },
+            { id: "og7", name: 'Tópicos de NLP', credits: 8, desc: 'Lenguaje natural.', subs: ['Lenguaje e IA', 'Síntesis voz', 'Plagio', 'Deep Learning', 'Discurso'] },
+            { id: "og8", name: 'Robótica Cognitiva', credits: 8, desc: 'Procesos cognitivos artificiales.', subs: ['Evolutiva', 'Colectivos', 'Modelos internos', 'Percepción', 'Desarrollo'] },
+            { id: "og9", name: 'Control Automático', credits: 8, desc: 'Sistemas de control.', subs: ['Dinámicos', 'Estabilidad', 'PID', 'Raíces', 'Frecuencia'] }
+        ];
+
+        const RAW_CURRICULUM = [
+            // SEM 1 (Total: 56)
+            { id: "AS", sem: 1, name: "Álgebra Superior", credits: 8, req: [], subs: [{name:"Lógica",completed:false}, {name:"Conjuntos",completed:false}, {name:"Inducción",completed:false}], type: "std", desc: "Fundamentos de lógica, teoría de números, inducción y conjuntos." },
+            { id: "GEO", sem: 1, name: "Geometría", credits: 8, req: [], subs: [{name:"Coordenadas",completed:false}, {name:"Recta",completed:false}, {name:"Cónicas",completed:false}], type: "std", desc: "Geometría analítica plana, cónicas y transformaciones." },
+            { id: "CDI", sem: 1, name: "Cálculo Diferencial e Integral", credits: 8, req: [], subs: [{name:"Límites",completed:false}, {name:"Derivadas",completed:false}, {name:"Integrales",completed:false}], type: "std", desc: "Límites, derivadas e integrales." },
+            { id: "IP", sem: 1, name: "Introducción a la Programación", credits: 6, req: [], subs: [{name:"Algoritmos",completed:false}, {name:"Diagramas",completed:false}, {name:"Estructuras",completed:false}], type: "std", desc: "Conceptos de algoritmos y programación estructurada." },
+            { id: "PLP", sem: 1, name: "Paradigmas y Lenguajes", credits: 9, req: [], subs: [{name:"Historia",completed:false}, {name:"Imperativo",completed:false}, {name:"Funcional",completed:false}], type: "std", desc: "Estudio comparativo de paradigmas." },
+            { id: "IAS", sem: 1, name: "IA y Sociedad", credits: 8, req: [], subs: [{name:"Ética básica",completed:false}, {name:"Impacto social",completed:false}, {name:"Regulación",completed:false}], type: "std", desc: "Impacto ético y social de la IA." },
+            { id: "PLM", sem: 1, name: "Pensamiento Lógico Mat.", credits: 6, req: [], subs: [{name:"Razonamiento",completed:false}, {name:"Abstracción",completed:false}], type: "std", desc: "Desarrollo del razonamiento (Transversal)." },
+            { id: "LIP", sem: 1, name: "Lab. Intro. Programación", credits: 2, req: [], subs: [{name:"Prácticas",completed:false}, {name:"Compilación",completed:false}], type: "std", desc: "Práctica de implementación de algoritmos." },
+            { id: "FI1", sem: 1, name: "Formación Integral", credits: 1, req: [], subs: [{name:"Actividad",completed:false}], type: "std", desc: "Actividades deportivas o culturales." },
+            { id: "TUT1", sem: 1, name: "Tutoría", credits: 0, req: [], subs: [{name:"Seguimiento",completed:false}], type: "std", desc: "Acompañamiento académico." },
+
+            // SEM 2 (Total: 55)
+            { id: "AL", sem: 2, name: "Álgebra Lineal", credits: 8, req: ["AS"], subs: [{name:"Matrices",completed:false}, {name:"Vectores",completed:false}, {name:"Espacios",completed:false}], type: "std", desc: "Matrices y espacios vectoriales." },
+            { id: "AM", sem: 2, name: "Álgebra Moderna", credits: 8, req: ["AS", "GEO"], subs: [{name:"Grupos",completed:false}, {name:"Anillos",completed:false}, {name:"Campos",completed:false}], type: "std", desc: "Grupos, anillos y campos." },
+            { id: "CM", sem: 2, name: "Cálculo Multivariable", credits: 8, req: ["CDI", "GEO"], subs: [{name:"Parciales",completed:false}, {name:"Múltiples",completed:false}], type: "std", desc: "Funciones de varias variables." },
+            { id: "ED", sem: 2, name: "Estructuras de Datos", credits: 6, req: ["IP"], subs: [{name:"Listas",completed:false}, {name:"Árboles",completed:false}], type: "std", desc: "Estructuras lineales y no lineales." },
+            { id: "LCC", sem: 2, name: "Lógica para la Comp.", credits: 8, req: ["AS", "PLP"], subs: [{name:"Proposicional",completed:false}, {name:"Predicados",completed:false}], type: "std", desc: "Lógica formal y demostración." },
+            { id: "DL", sem: 2, name: "Diseño Lógico", credits: 8, req: ["IP"], subs: [{name:"Compuertas",completed:false}, {name:"Circuitos",completed:false}], type: "std", desc: "Circuitos digitales." },
+            { id: "COE", sem: 2, name: "Com. Oral y Escrita", credits: 6, req: [], subs: [{name:"Redacción",completed:false}, {name:"Expresión",completed:false}], type: "std", desc: "Competencias comunicativas (Transversal)." },
+            { id: "LED", sem: 2, name: "Lab. Estructuras Datos", credits: 2, req: ["LIP"], subs: [{name:"Implementación",completed:false}], type: "std", desc: "Implementación práctica." },
+            { id: "FI2", sem: 2, name: "Formación Integral", credits: 1, req: [], subs: [{name:"Actividad",completed:false}], type: "std", desc: "Actividades." },
+
+            // SEM 3 (Total: 55)
+            { id: "PE", sem: 3, name: "Probabilidad y Est.", credits: 8, req: ["AL", "CDI"], subs: [{name:"Probabilidad",completed:false}, {name:"Estadística",completed:false}], type: "std", desc: "Análisis de datos." },
+            { id: "MN", sem: 3, name: "Métodos Numéricos", credits: 8, req: ["AL", "CM"], subs: [{name:"Raíces",completed:false}, {name:"Interpolación",completed:false}], type: "std", desc: "Algoritmos numéricos." },
+            { id: "POOE", sem: 3, name: "Prog. OO y Eventos", credits: 6, req: ["ED", "PLP"], subs: [{name:"Clases",completed:false}, {name:"Eventos",completed:false}], type: "std", desc: "Java y GUI." },
+            { id: "MD", sem: 3, name: "Matemáticas Discretas", credits: 8, req: ["AS", "LCC"], subs: [{name:"Grafos",completed:false}, {name:"Combinatoria",completed:false}], type: "std", desc: "Combinatoria y grafos." },
+            { id: "SD", sem: 3, name: "Sistemas Distribuidos", credits: 8, req: ["DL", "ED"], subs: [{name:"Sockets",completed:false}, {name:"Nube",completed:false}], type: "std", desc: "Cómputo en la nube." },
+            { id: "BD", sem: 3, name: "Bases de Datos", credits: 8, req: ["ED", "LCC"], subs: [{name:"SQL",completed:false}, {name:"Diseño",completed:false}], type: "std", desc: "SQL y modelo relacional." },
+            { id: "LASTE", sem: 3, name: "Lec. y An. Textos", credits: 6, req: ["COE"], subs: [{name:"Científicos",completed:false}, {name:"Síntesis",completed:false}], type: "std", desc: "Lectura y análisis de textos (Transversal)." },
+            { id: "LPOOE", sem: 3, name: "Lab. POO y Eventos", credits: 2, req: ["LED"], subs: [{name:"Proyectos",completed:false}], type: "std", desc: "Práctica en Java." },
+            { id: "FI3", sem: 3, name: "Formación Integral", credits: 1, req: [], subs: [{name:"Actividad",completed:false}], type: "std", desc: "Actividades." },
+
+            // SEM 4 (Total: 53)
+            { id: "AA", sem: 4, name: "Aprendizaje Automático", credits: 8, req: ["PE", "MN", "POOE"], subs: [{name:"Supervisado",completed:false}, {name:"No Sup.",completed:false}], type: "std", desc: "Algoritmos ML." },
+            { id: "PDI", sem: 4, name: "Proc. Digital Imágenes", credits: 8, req: ["AL", "POOE"], subs: [{name:"Filtros",completed:false}, {name:"Segmentación",completed:false}], type: "std", desc: "Análisis de imágenes." },
+            { id: "BSIB", sem: 4, name: "Búsqueda e Inferencia", credits: 8, req: ["MD", "PE"], subs: [{name:"Agentes",completed:false}, {name:"Bayes",completed:false}], type: "std", desc: "Agentes y Bayes." },
+            { id: "RAG", sem: 4, name: "Redes, Árboles y Grafos", credits: 8, req: ["MD"], subs: [{name:"Algoritmos",completed:false}, {name:"Optimización",completed:false}], type: "std", desc: "Teoría de grafos aplicada." },
+            { id: "SP", sem: 4, name: "Sistemas Paralelos", credits: 8, req: ["MN", "SD"], subs: [{name:"GPU",completed:false}, {name:"HPC",completed:false}], type: "std", desc: "Programación paralela." },
+            { id: "MDM", sem: 4, name: "Manejo Datos Masivos", credits: 6, req: ["BD", "SD"], subs: [{name:"Big Data",completed:false}, {name:"NoSQL",completed:false}], type: "std", desc: "Big Data." },
+            { id: "SOP", sem: 4, name: "Seminario Orientación", credits: 4, req: ["LASTE"], subs: [{name:"Profesional",completed:false}], type: "std", desc: "Visión profesional." },
+            { id: "LMDM", sem: 4, name: "Lab. Datos Masivos", credits: 2, req: ["LPOOE"], subs: [{name:"Spark",completed:false}], type: "std", desc: "Prácticas Big Data." },
+            { id: "FI4", sem: 4, name: "Formación Integral", credits: 1, req: [], subs: [{name:"Actividad",completed:false}], type: "std", desc: "Actividades." },
+
+            // SEM 5 (Total: 53)
+            { id: "IC", sem: 5, name: "Intro. a la Cognición", credits: 8, req: ["AA", "BSIB", "IAS"], subs: [{name:"Procesos",completed:false}, {name:"Modelos",completed:false}], type: "std", desc: "Ciencias cognitivas." },
+            { id: "VC", sem: 5, name: "Visión por Comp.", credits: 8, req: ["PDI"], subs: [{name:"Geometría",completed:false}, {name:"Reconocimiento",completed:false}], type: "std", desc: "Geometría visual." },
+            { id: "RNAP", sem: 5, name: "Redes Neuronales", credits: 8, req: ["AA"], subs: [{name:"DL",completed:false}, {name:"Arquitecturas",completed:false}], type: "std", desc: "Deep Learning." },
+            { id: "MT", sem: 5, name: "Minería de Textos", credits: 8, req: ["AA", "MDM"], subs: [{name:"NLP",completed:false}, {name:"Clasificación",completed:false}], type: "std", desc: "Procesamiento de lenguaje natural." },
+            { id: "ITC", sem: 5, name: "Teoría Computación", credits: 8, req: ["RAG"], subs: [{name:"Autómatas",completed:false}, {name:"Complejidad",completed:false}], type: "std", desc: "Autómatas y complejidad." },
+            { id: "OPT1", sem: 5, name: "Optativa I", credits: 8, req: [], subs: [], type: "opt", desc: "Especialización." },
+            { id: "SC", sem: 5, name: "Seminario Ciencias", credits: 4, req: ["SOP"], subs: [{name:"Divulgación",completed:false}], type: "std", desc: "Divulgación científica." },
+            { id: "FI5", sem: 5, name: "Formación Integral", credits: 1, req: [], subs: [{name:"Actividad",completed:false}], type: "std", desc: "Actividades." },
+
+            // SEM 6 (Total: 46)
+            { id: "EIA", sem: 6, name: "Ética e IA", credits: 8, req: ["IAS", "IC"], subs: [{name:"Responsabilidad",completed:false}, {name:"Impacto",completed:false}], type: "std", desc: "Ética en IA." },
+            { id: "RC", sem: 6, name: "Robótica Cognitiva", credits: 8, req: ["IC", "VC"], subs: [{name:"Paradigmas",completed:false}, {name:"Sistemas",completed:false}], type: "std", desc: "Robots inteligentes." },
+            { id: "OPT2", sem: 6, name: "Optativa II", credits: 8, req: ["OPT1"], subs: [], type: "opt", desc: "Especialización." },
+            { id: "OPT3", sem: 6, name: "Optativa III", credits: 8, req: ["OPT1"], subs: [], type: "opt", desc: "Especialización." },
+            { id: "ALG", sem: 6, name: "Algoritmia", credits: 9, req: ["ITC"], subs: [{name:"Diseño",completed:false}, {name:"Análisis",completed:false}], type: "std", desc: "Diseño avanzado de algoritmos." },
+            { id: "SIA", sem: 6, name: "Seminario de IA", credits: 4, req: ["SC"], subs: [{name:"Investigación",completed:false}], type: "std", desc: "Temas de frontera." },
+            { id: "SS", sem: 6, name: "Servicio Social", credits: 0, req: [], subs: [{name:"480 horas",completed:false}], type: "std", desc: "Requisito obligatorio." },
+            { id: "FI6", sem: 6, name: "Formación Integral", credits: 1, req: [], subs: [{name:"Actividad",completed:false}], type: "std", desc: "Actividades." },
+            { id: "TUT2", sem: 6, name: "Tutoría", credits: 0, req: [], subs: [{name:"Seguimiento",completed:false}], type: "std", desc: "Tutoría final." },
+
+            // SEM 7 (Total: 38)
+            { id: "OPT4", sem: 7, name: "Optativa IV", credits: 8, req: ["OPT1"], subs: [], type: "opt", desc: "Especialización." },
+            { id: "PIDIIA", sem: 7, name: "Proyecto Tesis I", credits: 30, req: ["SIA", "ALG"], subs: [{name:"Protocolo",completed:false}, {name:"Defensa",completed:false}], type: "std", desc: "Proyecto de Investigación, Desarrollo o Innovación." },
+
+            // SEM 8 (Total: 0)
+            { id: "PP", sem: 8, name: "Prácticas Prof.", credits: 0, req: ["SS"], subs: [{name:"480 horas",completed:false}], type: "std", desc: "Prácticas Profesionales obligatorias." }
+        ];
+
+        // --- CONSTANTS ---
+        const THEME = {
+            bg: '#050505',
+            node: {
+                locked: '#333333',
+                lockedBorder: '#555555',
+                available: '#ffcc00', 
+                mastered: '#00ff88', 
+                elective: '#ff00ff',
+                text: '#ffffff',
+            },
+            connection: {
+                locked: '#222222',
+                active: '#444444',
+                mastered: '#005522',
+            }
+        };
+
+        // --- APP STATE ---
+        const app = {
+            nodes: [],
+            particles: [],
+            camera: { x: -200, y: 0, zoom: 0.8 },
+            dragging: false,
+            lastMouse: { x: 0, y: 0 },
+            hoveredNode: null,
+            selectedNode: null,
+            
+            // Canvases
+            canvas: null,
+            ctx: null,
+            fxCanvas: null,
+            fxCtx: null,
+            
+            width: 0,
+            height: 0,
+            globalPulse: 0,
+            saveTimeout: null,
+
+            init() {
+                this.canvas = document.getElementById('skill-canvas');
+                this.ctx = this.canvas.getContext('2d', { alpha: false });
+                
+                this.fxCanvas = document.getElementById('fx-canvas');
+                this.fxCtx = this.fxCanvas.getContext('2d');
+
+                // Initialize Icons
+                lucide.createIcons();
+
+                // Listeners
+                window.addEventListener('resize', () => this.resize());
+                this.canvas.addEventListener('mousedown', e => this.onMouseDown(e));
+                window.addEventListener('mousemove', e => this.onMouseMove(e));
+                window.addEventListener('mouseup', () => this.onMouseUp());
+                this.canvas.addEventListener('wheel', e => this.onWheel(e));
+                this.canvas.addEventListener('click', e => this.onClick(e));
+
+                // Buttons
+                document.getElementById('btn-load-default').onclick = () => this.loadData(RAW_CURRICULUM);
+                document.getElementById('btn-load-file').onclick = () => document.getElementById('file-input').click();
+                document.getElementById('file-input').onchange = (e) => this.handleFileUpload(e);
+                document.getElementById('btn-close-modal').onclick = () => this.closeModal();
+                document.getElementById('btn-override').onclick = () => this.overrideComplete();
+
+                this.resize();
+                requestAnimationFrame(() => this.loop());
+            },
+
+            resize() {
+                this.width = this.canvas.width = window.innerWidth;
+                this.height = this.canvas.height = window.innerHeight;
+                this.fxCanvas.width = this.width;
+                this.fxCanvas.height = this.height;
+            },
+
+            // --- DATA LOGIC ---
+            loadData(data) {
+                // Compute Layout
+                const nodesBySem = {};
+                data.forEach(n => {
+                    if (!nodesBySem[n.sem]) nodesBySem[n.sem] = [];
+                    nodesBySem[n.sem].push(n);
+                });
+
+                this.nodes = data.map(n => {
+                    const siblings = nodesBySem[n.sem];
+                    const index = siblings.findIndex(sib => sib.id === n.id);
+                    const count = siblings.length;
+                    
+                    // Coordinates
+                    const x = n.sem * 280;
+                    const y = (index - (count - 1) / 2) * 160;
+
+                    return { ...n, x, y };
+                });
+
+                // Hide Start, Show HUD
+                document.getElementById('start-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('start-screen').classList.add('hidden'), 500);
+                document.getElementById('hud-layer').classList.remove('hidden');
+                
+                this.updateHUD();
+            },
+
+            calculateStatus(node) {
+                if (node.type === 'opt' && node.subs.length === 0) return 'elective_slot';
+                
+                const subsCompleted = node.subs.length > 0 && node.subs.every(s => s.completed);
+                if (subsCompleted) return 'mastered';
+
+                if (node.req.length === 0) return 'available';
+
+                const parents = this.nodes.filter(n => node.req.includes(n.id));
+                const parentsMastered = parents.every(p => {
+                    return p.subs.length > 0 && p.subs.every(s => s.completed);
+                });
+
+                return parentsMastered ? 'available' : 'locked';
+            },
+
+            // --- RENDERING ---
+            loop() {
+                this.globalPulse += 0.05;
+                this.render();
+                this.renderFX();
+                requestAnimationFrame(() => this.loop());
+            },
+
+            render() {
+                const ctx = this.ctx;
+                const { width, height, camera, nodes } = this;
+
+                // Clear
+                ctx.fillStyle = THEME.bg;
+                ctx.fillRect(0, 0, width, height);
+
+                ctx.save();
+                ctx.translate(width / 2 + camera.x, height / 2 + camera.y);
+                ctx.scale(camera.zoom, camera.zoom);
+
+                // Draw Semesters
+                ctx.font = '900 120px "Orbitron"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                for (let i = 1; i <= 8; i++) {
+                    const xPos = i * 280;
+
+                    if (i%2){
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.90)';
+                        ctx.fillText(`${i}`, xPos, 1000);
+                        ctx.beginPath();
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+                        ctx.lineWidth = 280;
+                        ctx.moveTo(xPos, -1500);
+                        ctx.lineTo(xPos, 1500);
+                        ctx.stroke();
+                    }
+                    else{
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                        ctx.fillText(`${i}`, xPos, 1000);
+                    }
+                }
+
+                // Draw Connections
+                nodes.forEach(node => {
+                    node.req.forEach(pid => {
+                        const parent = nodes.find(n => n.id === pid);
+                        if (parent) {
+                            const status = this.calculateStatus(node);
+                            ctx.beginPath();
+                            const cp1x = parent.x + 140; const cp1y = parent.y;
+                            const cp2x = node.x - 140; const cp2y = node.y;
+                            ctx.moveTo(parent.x, parent.y);
+                            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, node.x, node.y);
+                            
+                            if (status === 'mastered') {
+                                ctx.strokeStyle = THEME.connection.mastered;
+                                ctx.lineWidth = 4;
+                            } else if (status === 'available') {
+                                ctx.strokeStyle = THEME.connection.active;
+                                ctx.lineWidth = 2;
+                            } else {
+                                ctx.strokeStyle = THEME.connection.locked;
+                                ctx.lineWidth = 1;
+                            }
+                            ctx.stroke();
+                        }
+                    });
+                });
+
+                // Draw Nodes
+                nodes.forEach(node => {
+                    const status = this.calculateStatus(node);
+                    const isHovered = this.hoveredNode === node;
+
+                    // Colors
+                    let strokeColor = THEME.node.lockedBorder;
+                    let glowColor = 'transparent';
+                    let neonPulse = 0;
+
+                    if (status === 'mastered') {
+                        strokeColor = THEME.node.mastered;
+                        glowColor = 'rgba(0, 255, 136, 0.3)';
+                        neonPulse = 20 + Math.sin(this.globalPulse) * 15;
+                    } else if (status === 'available') {
+                        strokeColor = THEME.node.available;
+                        glowColor = 'rgba(255, 204, 0, 0.25)';
+                        neonPulse = 18 + Math.sin(this.globalPulse + 2) * 12;
+                    } else if (status === 'elective_slot') {
+                        strokeColor = THEME.node.elective;
+                        glowColor = 'rgba(255, 0, 255, 0.25)';
+                        neonPulse = 18 + Math.sin(this.globalPulse + 4) * 12;
+                    }
+
+                    if (node.type === 'opt' && status !== 'elective_slot') {
+                         strokeColor = status === 'mastered' ? THEME.node.mastered : THEME.node.elective;
+                    }
+
+                    // Glow Effect - Multiple layers for breathing effect
+                    if (status !== 'locked' || isHovered) {
+                        // Outer glow layer
+                        ctx.shadowBlur = neonPulse * 1.5;
+                        ctx.shadowColor = strokeColor;
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, 20 + (isHovered ? 5 : 0), 0, Math.PI * 2);
+                        ctx.fillStyle = glowColor;
+                        ctx.fill();
+
+                        // Middle glow layer
+                        ctx.shadowBlur = neonPulse;
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, 10 + (isHovered ? 5 : 0), 0, Math.PI * 2);
+                        ctx.fillStyle = glowColor;
+                        ctx.fill();
+
+                        ctx.shadowBlur = 0; // Reset
+                    }
+
+                    // Circle with breathing border
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, 25, 0, Math.PI * 2);
+                    ctx.fillStyle = '#0a0a0a';
+                    ctx.fill();
+
+                    // Breathing border effect
+                    if (status !== 'locked') {
+                        ctx.shadowBlur = neonPulse * 0.8;
+                        ctx.shadowColor = strokeColor;
+                    }
+                    ctx.lineWidth = isHovered ? 4 : 2;
+                    ctx.strokeStyle = strokeColor;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0; // Reset
+
+                    // Fill if done
+                    if (status === 'mastered') {
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+                        ctx.fillStyle = strokeColor;
+                        ctx.fill();
+                    }
+
+                    // Text
+                    ctx.font = '500 14px "Rajdhani"';
+                    ctx.fillStyle = isHovered ? '#fff' : '#aaa';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(node.name.substring(0, 15), node.x, node.y + 45);
+                });
+
+                ctx.restore();
+            },
+
+            // --- PARTICLES & FX ---
+            spawnParticles(x, y, color) {
+                for (let i = 0; i < 15; i++) {
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 8,
+                        vy: (Math.random() - 0.5) * 8,
+                        life: 1.0,
+                        color: color
+                    });
+                }
+            },
+
+            renderFX() {
+                const ctx = this.fxCtx;
+                ctx.clearRect(0, 0, this.width, this.height);
+
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.03;
+
+                    if (p.life <= 0) {
+                        this.particles.splice(i, 1);
+                    } else {
+                        ctx.globalAlpha = p.life;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                ctx.globalAlpha = 1.0;
+            },
+            
+            triggerSave() {
+                const el = document.getElementById('save-indicator');
+                el.style.opacity = '1';
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = setTimeout(() => {
+                    el.style.opacity = '0';
+                }, 1000);
+            },
+
+            // --- INPUT HANDLING ---
+            onWheel(e) {
+                e.preventDefault();
+                const scaleFactor = 1.1;
+                const newZoom = e.deltaY < 0 
+                    ? Math.min(this.camera.zoom * scaleFactor, 3) 
+                    : Math.max(this.camera.zoom / scaleFactor, 0.3);
+                this.camera.zoom = newZoom;
+            },
+
+            onMouseDown(e) {
+                if (e.button === 0) {
+                    this.dragging = true;
+                    this.lastMouse = { x: e.clientX, y: e.clientY };
+                }
+            },
+
+            onMouseMove(e) {
+                // Hover Logic
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseX = (e.clientX - rect.left - this.width / 2 - this.camera.x) / this.camera.zoom;
+                const mouseY = (e.clientY - rect.top - this.height / 2 - this.camera.y) / this.camera.zoom;
+
+                let found = null;
+                for (let i = this.nodes.length - 1; i >= 0; i--) {
+                    const n = this.nodes[i];
+                    const dist = Math.sqrt((mouseX - n.x) ** 2 + (mouseY - n.y) ** 2);
+                    if (dist < 30) { found = n; break; }
+                }
+                this.hoveredNode = found;
+                this.updateTooltip(e.clientX, e.clientY);
+
+                // Pan Logic
+                if (this.dragging) {
+                    const dx = e.clientX - this.lastMouse.x;
+                    const dy = e.clientY - this.lastMouse.y;
+                    this.camera.x += dx;
+                    this.camera.y += dy;
+                    this.lastMouse = { x: e.clientX, y: e.clientY };
+                }
+            },
+
+            onMouseUp() {
+                this.dragging = false;
+            },
+
+            onClick(e) {
+                if (this.hoveredNode) {
+                    const status = this.calculateStatus(this.hoveredNode);
+                    if (status === 'elective_slot') {
+                        this.openElectiveModal(this.hoveredNode);
+                    } else if (status !== 'locked') {
+                        this.openModal(this.hoveredNode);
+                    }
+                }
+            },
+
+            // --- UI LOGIC ---
+            updateTooltip(x, y) {
+                const tt = document.getElementById('tooltip');
+                if (this.hoveredNode) {
+                    tt.classList.remove('hidden');
+                    tt.style.left = (x + 20) + 'px';
+                    tt.style.top = (y + 20) + 'px';
+                    document.getElementById('tooltip-name').innerText = this.hoveredNode.name;
+                    document.getElementById('tooltip-desc').innerText = this.hoveredNode.desc;
+                    this.canvas.style.cursor = 'pointer';
+                } else {
+                    tt.classList.add('hidden');
+                    this.canvas.style.cursor = 'crosshair';
+                }
+            },
+
+            updateHUD() {
+                const earned = this.nodes.reduce((acc, n) => {
+                    const mastered = n.subs.length > 0 && n.subs.every(s => s.completed);
+                    return mastered ? acc + (n.credits || 0) : acc;
+                }, 0);
+                const total = this.nodes.reduce((acc, n) => acc + (n.credits || 0), 0);
+                
+                // Percent
+                const pct = total === 0 ? 0 : Math.floor((earned / total) * 100);
+
+                document.getElementById('credits-current').innerText = earned;
+                document.getElementById('credits-total').innerText = total;
+                document.getElementById('credits-percent').innerText = `${pct}% COMPLETE`;
+            },
+
+            openModal(node) {
+                this.selectedNode = node;
+                const modal = document.getElementById('focus-modal');
+                modal.classList.remove('hidden');
+
+                // Populate Info
+                document.getElementById('modal-title').innerText = node.name;
+                document.getElementById('modal-sem').innerText = node.sem;
+                document.getElementById('modal-credits').innerText = node.credits;
+                document.getElementById('modal-desc').innerText = node.desc;
+
+                this.renderRadial(node);
+            },
+
+            renderRadial(node) {
+                const container = document.getElementById('radial-container');
+                // Keep center, remove old satellites
+                const center = document.getElementById('radial-center');
+                container.innerHTML = '';
+                container.appendChild(center);
+
+                // Update Center Style
+                const status = this.calculateStatus(node);
+                const color = status === 'mastered' ? 'text-green-500 border-green-500' : 'text-white border-white';
+                center.className = `pointer-events-auto relative z-20 w-40 h-40 rounded-full border-4 bg-neutral-900 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.5)] transition-all duration-300 ${color}`;
+                
+                document.getElementById('radial-center-content').innerHTML = `
+                    <span class="text-4xl font-display font-black">${node.id.substring(0,3)}</span>
+                    <span class="text-xs uppercase font-bold mt-1 px-2 py-0.5 rounded bg-neutral-800">${status}</span>
+                `;
+
+                // Render Satellites
+                if (node.subs.length > 0) {
+                    const radius = 180;
+                    const startAngle = -Math.PI / 2;
+                    const total = node.subs.length;
+                    
+                    node.subs.forEach((sub, i) => {
+                        const angle = startAngle + (i * (2 * Math.PI) / total);
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+
+                        const el = document.createElement('div');
+                        el.className = `absolute flex items-center justify-center p-3 rounded-xl border backdrop-blur-sm transition-all duration-300 cursor-pointer pointer-events-auto w-[140px] ${sub.completed ? 'bg-green-900/40 border-green-500 text-green-400' : 'bg-black/60 border-neutral-700 text-neutral-400 hover:border-white hover:text-white'}`;
+                        el.style.transform = `translate(${x}px, ${y}px)`;
+                        el.innerHTML = `
+                            <div class="flex flex-col items-center text-center gap-1">
+                                ${sub.completed ? '<i data-lucide="check-circle" class="w-5 h-5"></i>' : '<i data-lucide="circle" class="w-5 h-5"></i>'}
+                                <span class="text-xs font-bold leading-tight select-none">${sub.name}</span>
+                            </div>
+                        `;
+                        // Particle Event Handling
+                        el.onclick = (e) => {
+                            // Calculate global spawn coordinates from element rect
+                            const rect = el.getBoundingClientRect();
+                            const spawnX = rect.left + rect.width / 2;
+                            const spawnY = rect.top + rect.height / 2;
+
+                            this.spawnParticles(spawnX, spawnY, sub.completed ? '#ef4444' : '#00ff88'); // Red if unchecking, Green if checking (inverted logic here since we flip boolean next)
+
+                            sub.completed = !sub.completed;
+                            this.renderRadial(node);
+                            this.updateHUD();
+                            this.triggerSave();
+                        };
+                        container.appendChild(el);
+                    });
+                    lucide.createIcons();
+                }
+
+                // Update Progress Bar
+                const completed = node.subs.filter(s => s.completed).length;
+                const totalSubs = node.subs.length || 1;
+                const pct = Math.round((completed / totalSubs) * 100);
+                document.getElementById('modal-progress-text').innerText = `${pct}%`;
+                document.getElementById('modal-progress-bar').style.width = `${pct}%`;
+                document.getElementById('modal-progress-bar').className = `h-full transition-all duration-500 ${pct === 100 ? 'bg-green-500' : 'bg-yellow-500'}`;
+            },
+
+            closeModal() {
+                document.getElementById('focus-modal').classList.add('hidden');
+                this.selectedNode = null;
+            },
+
+            overrideComplete() {
+                if (this.selectedNode) {
+                    this.selectedNode.subs.forEach(s => s.completed = true);
+                    this.renderRadial(this.selectedNode);
+                    this.updateHUD();
+                    this.triggerSave();
+                    
+                    // Spawn center particles
+                    const w = window.innerWidth / 2;
+                    const h = window.innerHeight / 2;
+                    this.spawnParticles(w, h, '#00ff88');
+                }
+            },
+
+            // --- ELECTIVE LOGIC ---
+            openElectiveModal(node) {
+                this.selectedNode = node;
+                const modal = document.getElementById('elective-modal');
+                modal.classList.remove('hidden');
+                
+                const list = document.getElementById('elective-list');
+                list.innerHTML = '';
+                
+                OPTATIVES_POOL.forEach(opt => {
+                    const el = document.createElement('div');
+                    el.className = 'p-4 border border-neutral-700 bg-neutral-800/50 hover:bg-neutral-800 hover:border-yellow-500 transition-colors cursor-pointer group';
+                    el.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-lg text-white group-hover:text-yellow-400">${opt.name}</h3>
+                            <span class="text-xs font-mono bg-neutral-900 px-2 py-1 rounded text-neutral-400">${opt.credits} CR</span>
+                        </div>
+                        <p class="text-sm text-neutral-400 mt-1">${opt.desc}</p>
+                    `;
+                    el.onclick = () => this.selectElective(opt);
+                    list.appendChild(el);
+                });
+            },
+
+            selectElective(opt) {
+                if (!this.selectedNode) return;
+                
+                // Update Node Data
+                this.selectedNode.name = opt.name;
+                this.selectedNode.desc = opt.desc;
+                this.selectedNode.credits = opt.credits;
+                this.selectedNode.subs = opt.subs.map(s => ({ name: s, completed: false }));
+                
+                this.triggerSave();
+                this.closeElectiveModal();
+                
+                // Show as selected immediately via Focus Modal
+                this.openModal(this.selectedNode);
+            },
+
+            closeElectiveModal() {
+                document.getElementById('elective-modal').classList.add('hidden');
+            },
+
+            // --- FILE I/O ---
+            downloadSave() {
+                const exportData = this.nodes.map(({x, y, ...rest}) => rest); // Strip layout coords
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+                const dl = document.createElement('a');
+                dl.setAttribute("href", dataStr);
+                dl.setAttribute("download", "curriculum_progress.json");
+                document.body.appendChild(dl);
+                dl.click();
+                dl.remove();
+            },
+
+            handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const json = JSON.parse(event.target.result);
+                        this.loadData(json);
+                    } catch (err) {
+                        alert("Invalid JSON");
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        // BOOT
+        app.init();
+
+    </script>
+</body>
+</html>
